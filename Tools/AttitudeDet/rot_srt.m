@@ -1,4 +1,4 @@
-function [ b_v ] = rot_srt( a_v, theta, lambda )
+function [ b_v ] = rot_srt( a_v, lambda, theta )
 %SRT a = original vector, lambda = rotation axis unit vector
 % theta = rotation angle (degrees)
 

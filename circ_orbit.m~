@@ -88,7 +88,7 @@ norm_sun_sens(14,:,:) = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 0,-90);
 [I_sun_sens, I_sun_sens_alpha]   = sun_sens(Orbit.Sun_ECI,norm_sun_sens); 
 
 %Estimate sun vector solution based on sensor
-[S_sens_est, S_sens_num] = est_sun_sens(I_sun_sens, norm_sun_sens);
+S_sens_est = est_sun_sens(I_sun_sens, norm_sun_sens);
 
 %% Generate Cosine Matrix
 % for i=1:length(B_Mag_1)
@@ -124,8 +124,8 @@ title('Satellite z\_hat (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
 
+
 %Plot Magnetometer
-figure;
 subplot(2,1,1);
 hold on;
 plot(Orbit.B_ECI(1,:),'r');
@@ -141,30 +141,8 @@ plot(Orbit.Time,B_Mag_2,'g');
 plot(Orbit.Time,B_Mag_3,'b');
 legend('B_x','B_y','B_z');
 xlabel('Time');
-ylabel('Magnetic Field Strength (Magnetometer)')
+ylabel('Magnetic Field Strength')
 hold off;
-
-%Sun Estimate
-figure;
-subplot(3,1,1);
-hold on;
-plot(Orbit.Time,Orbit.Sun_ECI(1,:),'r');
-plot(Orbit.Time,Orbit.Sun_ECI(2,:),'g');
-plot(Orbit.Time,Orbit.Sun_ECI(3,:),'b');
-title('Sun Vector');
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(3,1,2);
-hold on;
-plot(Orbit.Time,S_sens_est(1,:),'r');
-plot(Orbit.Time,S_sens_est(2,:),'g');
-plot(Orbit.Time,S_sens_est(3,:),'b');
-title('Sun Vector Estimate');
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(3,1,3);
-plot(Orbit.Time, S_sens_num);
-title('Number of active Sun sensors');
 
 %Plot Sun Sensor
 figure;
@@ -205,7 +183,24 @@ plot(Orbit.Time,I_sun_sens(14,:),'r');
 hold off;
 title('-z');
 
-
+%Sun Estimate
+figure;
+subplot(2,1,1);
+hold on;
+plot(Orbit.Sun_ECI(1,:),'r');
+plot(Orbit.Sun_ECI(2,:),'g');
+plot(Orbit.Sun_ECI(3,:),'b');
+title('Sun Vector');
+legend('ECI\_X','ECI\_Y','ECI\_Z');
+hold off;
+subplot(2,1,2);
+hold on;
+plot(S_sens_est(1,:),'r');
+plot(S_sens_est(2,:),'g');
+plot(S_sens_est(3,:),'b');
+title('Sun Vector Estimate');
+legend('ECI\_X','ECI\_Y','ECI\_Z');
+hold off;
 
 %Plot Orbit
 % figure;

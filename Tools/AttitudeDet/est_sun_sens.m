@@ -12,7 +12,7 @@ function [ s_e, sens_num ] = est_sun_sens( I_sun_sens, norm_sun_sens )
         for i = 1:length(I_sun_sens(:,1))
             if I_sun_sens(i,j) > I_co
                b = [b;I_sun_sens(i,j)];
-               A = [A;norm_sun_sens(i,:,j)];
+               A = [A;norm_sun_sens(i,:)];
             end
         end
         A_size = size(A);

@@ -47,7 +47,7 @@ time = startTime:timeStep/(3600*24):stopTime;
 Orbit = GenOrbit(time, TLE);
 clear SatNum SatClass IntDsgntr Epoch startTime stopTime timeStep time
 
-%% Create Satellite Frame
+%% ECI to Satellite Body Frame DCM
 Sat_ECI_xhat = zeros(size(Orbit.posECI_km));
 Sat_ECI_zhat = zeros(size(Orbit.posECI_km));
 Sat_ECI_yhat = zeros(size(Orbit.posECI_km));
@@ -59,88 +59,96 @@ Sat_ECI_zhat(3,:) = -1*Orbit.velECI_kmps(3,:)./sqrt(sum(abs(Orbit.velECI_kmps).^
 for i=1:length(Orbit.velECI_kmps(1,:))
     Sat_ECI_xhat(:,i) = ortho_norm(-Orbit.posECI_km(:,i),Sat_ECI_zhat(:,i));
     Sat_ECI_yhat(:,i) = cross(Sat_ECI_zhat(:,i),Sat_ECI_xhat(:,i));
-    B_norm(:,i) = Orbit.B_ECI(:,i)/norm(Orbit.B_ECI(:,i));
 end
 
-%% Sensors
+R_eci_body(:,1,:) = Sat_ECI_xhat;
+R_eci_body(:,2,:) = Sat_ECI_yhat;
+R_eci_body(:,3,:) = Sat_ECI_zhat;
 
-%3x Magnetometers
-B_sens_est(1,:) = mag_sens(Orbit.B_ECI,Sat_ECI_xhat);
-B_sens_est(2,:) = mag_sens(Orbit.B_ECI,Sat_ECI_yhat);
-B_sens_est(3,:) = mag_sens(Orbit.B_ECI,Sat_ECI_zhat);
+%% Sensor Simulation
+%Continuous
+[B_mag_sens, I_sun_sens, norm_sun_sens] = sc_sensor_sim(R_eci_body,Orbit.Sun_ECI,Orbit.B_ECI);
 
-%14x Sun sensors (RAX2 positioning)
-norm_sun_sens_eci(1,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 17,-10);
-norm_sun_sens_eci(2,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 0,20);
-norm_sun_sens_eci(3,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, -17,10);
-norm_sun_sens_eci(4,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, -162,-10);
-norm_sun_sens_eci(5,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 180,20);
-norm_sun_sens_eci(6,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 162,-10);
-norm_sun_sens_eci(7,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 72,10);
-norm_sun_sens_eci(8,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 107,10);
-norm_sun_sens_eci(9,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 90,-20);
-norm_sun_sens_eci(10,:,:) = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, -107,10);
-norm_sun_sens_eci(11,:,:) = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, -72,10);
-norm_sun_sens_eci(12,:,:) = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, -90,-20);
-norm_sun_sens_eci(13,:,:) = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 0,90);
-norm_sun_sens_eci(14,:,:) = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 0,-90);
+%Discrete
+fs_sens = 1/10; %Hz
+Sun_ECI_ts = timeseries(Orbit.Sun_ECI,Orbit.Time,'name','I_eci');
+I_sun_sens_ts = timeseries(I_sun_sens,Orbit.Time,'name','I_bf');
+B_ECI_ts = timeseries(Orbit.B_ECI,Orbit.Time,'name','B_eci');
+B_mag_sens_ts = timeseries(B_mag_sens,Orbit.Time,'name','B_bf');
+Time_rs = startTime:(1/fs_sens)/(3600*24):stopTime;
+Sun_ECI_rs = resample(Sun_ECI_ts,Time_rs);
+I_sun_sens_rs = resample(I_sun_sens_ts,Time_rs);
+B_ECI_rs = resample(B_mag_sens_ts,Time_rs);
+B_sun_sens_rs = resample(B_ECI_ts,Time_rs);
 
-sim_length = length(Sat_ECI_xhat(1,:));
+%% Attitude Estimate
+%Estimate sun vector
+[S_sens_est_bf, S_sens_num_bf] = est_sun_sens(I_sun_sens_rs, norm_sun_sens);
 
-norm_sun_sens_bf(1,:,:)  = rot_azel([1;0;0], [0;0;1], 17,-10)*ones(1,sim_length);
-norm_sun_sens_bf(2,:,:)  = rot_azel([1;0;0], [0;0;1], 0,20)*ones(1,sim_length);
-norm_sun_sens_bf(3,:,:)  = rot_azel([1;0;0], [0;0;1], -17,10)*ones(1,sim_length);
-norm_sun_sens_bf(4,:,:)  = rot_azel([1;0;0], [0;0;1], -162,-10)*ones(1,sim_length);
-norm_sun_sens_bf(5,:,:)  = rot_azel([1;0;0], [0;0;1], 180,20)*ones(1,sim_length);
-norm_sun_sens_bf(6,:,:)  = rot_azel([1;0;0], [0;0;1], 162,-10)*ones(1,sim_length);
-norm_sun_sens_bf(7,:,:)  = rot_azel([1;0;0], [0;0;1], 72,10)*ones(1,sim_length);
-norm_sun_sens_bf(8,:,:)  = rot_azel([1;0;0], [0;0;1], 107,10)*ones(1,sim_length);
-norm_sun_sens_bf(9,:,:)  = rot_azel([1;0;0], [0;0;1], 90,-20)*ones(1,sim_length);
-norm_sun_sens_bf(10,:,:) = rot_azel([1;0;0], [0;0;1], -107,10)*ones(1,sim_length);
-norm_sun_sens_bf(11,:,:) = rot_azel([1;0;0], [0;0;1], -72,10)*ones(1,sim_length);
-norm_sun_sens_bf(12,:,:) = rot_azel([1;0;0], [0;0;1], -90,-20)*ones(1,sim_length);
-norm_sun_sens_bf(13,:,:) = rot_azel([1;0;0], [0;0;1], 0,90)*ones(1,sim_length);
-norm_sun_sens_bf(14,:,:) = rot_azel([1;0;0], [0;0;1], 0,-90)*ones(1,sim_length);
+%Estimate magnetic field vector
+B_sens_est = B_mag_sens_rs;
 
-[I_sun_sens, I_sun_sens_alpha]   = sun_sens(Orbit.Sun_ECI,norm_sun_sens_eci); 
-
-%Estimate sun vector solution based on sensor
-[S_sens_est, S_sens_num] = est_sun_sens(I_sun_sens, norm_sun_sens_eci);
-[S_sens_est_bf, S_sens_num_bf] = est_sun_sens(I_sun_sens, norm_sun_sens_bf);
-
-%% Generate Cosine Matrix
-for k=1:length(B_sens_est(1,:))
-    b_k = [B_sens_est(:,k),S_sens_est(:,k)];
-    eci_k = [Orbit.B_ECI(:,k),Orbit.Sun_ECI(:,k)];
-    R_eci_body(k,:,:) = est_svd(b_k, eci_k);
-    x_est_eci(:,k) 
+% Generate Cosine Matrix
+sens_length = length(Time_rs);
+for k=1:sim_length
+    b_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
+    eci_k = [B_ECI_rs(:,k),Sun_ECI_rs(:,k)];
+    R_eci_body_est(:,:,k) = est_svd(b_k, eci_k);
 end
 
+Sat_ECI_xhat_est = (reshape(R_eci_body_est(:,1,:),3,sens_length));
+Sat_ECI_yhat_est = (reshape(R_eci_body_est(:,2,:),3,sens_length));
+Sat_ECI_zhat_est = (reshape(R_eci_body_est(:,3,:),3,sens_length));
 
 %% Plots
+%%Plots
 figure;
-subplot(3,1,1);
+subplot(2,3,1);
 hold on;
-plot(Sat_ECI_xhat(1,:),'r');
-plot(Sat_ECI_xhat(2,:),'g');
-plot(Sat_ECI_xhat(3,:),'b');
+plot(Orbit.Time,Sat_ECI_xhat(1,:),'r');
+plot(Orbit.Time,Sat_ECI_xhat(2,:),'g');
+plot(Orbit.Time,Sat_ECI_xhat(3,:),'b');
 title('Satellite x\_hat (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
-subplot(3,1,2);
+subplot(2,3,2);
 hold on;
-plot(Sat_ECI_yhat(1,:),'r');
-plot(Sat_ECI_yhat(2,:),'g');
-plot(Sat_ECI_yhat(3,:),'b');
+plot(Orbit.Time,Sat_ECI_yhat(1,:),'r');
+plot(Orbit.Time,Sat_ECI_yhat(2,:),'g');
+plot(Orbit.Time,Sat_ECI_yhat(3,:),'b');
 title('Satellite y\_hat (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
-subplot(3,1,3);
+subplot(2,3,3);
 hold on;
-plot(Sat_ECI_zhat(1,:),'r');
-plot(Sat_ECI_zhat(2,:),'g');
-plot(Sat_ECI_zhat(3,:),'b');
+plot(Orbit.Time,Sat_ECI_zhat(1,:),'r');
+plot(Orbit.Time,Sat_ECI_zhat(2,:),'g');
+plot(Orbit.Time,Sat_ECI_zhat(3,:),'b');
 title('Satellite z\_hat (ECI)')
+legend('ECI\_X','ECI\_Y','ECI\_Z');
+hold off;
+subplot(2,3,4);
+hold on;
+plot(Time_rs,Sat_ECI_xhat_est(1,:),'r');
+plot(Time_rs,Sat_ECI_xhat_est(2,:),'g');
+plot(Time_rs,Sat_ECI_xhat_est(3,:),'b');
+title('Satellite x\_hat Estimate (ECI)')
+legend('ECI\_X','ECI\_Y','ECI\_Z');
+hold off;
+subplot(2,3,5);
+hold on;
+plot(Time_rs,Sat_ECI_yhat_est(1,:),'r');
+plot(Time_rs,Sat_ECI_yhat_est(2,:),'g');
+plot(Time_rs,Sat_ECI_yhat_est(3,:),'b');
+title('Satellite y\_hat estimate (ECI)')
+legend('ECI\_X','ECI\_Y','ECI\_Z');
+hold off;
+subplot(2,3,6);
+hold on;
+plot(Time_rs,Sat_ECI_zhat_est(1,:),'r');
+plot(Time_rs,Sat_ECI_zhat_est(2,:),'g');
+plot(Time_rs,Sat_ECI_zhat_est(3,:),'b');
+title('Satellite z\_hat estimate (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
 
@@ -148,17 +156,17 @@ hold off;
 figure;
 subplot(2,1,1);
 hold on;
-plot(Orbit.B_ECI(1,:),'r');
-plot(Orbit.B_ECI(2,:),'g');
-plot(Orbit.B_ECI(3,:),'b');
+plot(Orbit.Time,Orbit.B_ECI(1,:),'r');
+plot(Orbit.Time,Orbit.B_ECI(2,:),'g');
+plot(Orbit.Time,Orbit.B_ECI(3,:),'b');
 title('Magnetic Field Vector');
 legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
 subplot(2,1,2);
-plot(Orbit.Time,B_sens_est(1,:),'r');
+plot(Time_rs,B_sens_est(1,:),'r');
 hold on;
-plot(Orbit.Time,B_sens_est(2,:),'g');
-plot(Orbit.Time,B_sens_est(3,:),'b');
+plot(Time_rs,B_sens_est(2,:),'g');
+plot(Time_rs,B_sens_est(3,:),'b');
 title('Magnetic Field Vector Estimate');
 legend('B_x','B_y','B_z');
 xlabel('Time');
@@ -167,7 +175,7 @@ hold off;
 
 %Sun Estimate
 figure;
-subplot(4,1,1);
+subplot(3,1,1);
 hold on;
 plot(Orbit.Time,Orbit.Sun_ECI(1,:),'r');
 plot(Orbit.Time,Orbit.Sun_ECI(2,:),'g');
@@ -175,30 +183,30 @@ plot(Orbit.Time,Orbit.Sun_ECI(3,:),'b');
 title('Sun Vector');
 legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
-subplot(4,1,2);
+% subplot(4,1,2);
+% hold on;
+% plot(Orbit.Time,S_sens_est(1,:),'r');
+% plot(Orbit.Time,S_sens_est(2,:),'g');
+% plot(Orbit.Time,S_sens_est(3,:),'b');
+% title('Sun Vector Estimate');
+% legend('ECI\_X','ECI\_Y','ECI\_Z');
+% hold off;
+subplot(3,1,2);
 hold on;
-plot(Orbit.Time,S_sens_est(1,:),'r');
-plot(Orbit.Time,S_sens_est(2,:),'g');
-plot(Orbit.Time,S_sens_est(3,:),'b');
-title('Sun Vector Estimate');
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(4,1,3);
-hold on;
-plot(Orbit.Time,S_sens_est_bf(1,:),'r');
-plot(Orbit.Time,S_sens_est_bf(2,:),'g');
-plot(Orbit.Time,S_sens_est_bf(3,:),'b');
+plot(Time_rs,S_sens_est_bf(1,:),'r');
+plot(Time_rs,S_sens_est_bf(2,:),'g');
+plot(Time_rs,S_sens_est_bf(3,:),'b');
 title('Sun Vector Estimate');
 legend('BF\_X','BF\_Y','BF\_Z');
 hold off;
-subplot(4,1,4);
-plot(Orbit.Time, S_sens_num);
+subplot(3,1,3);
+plot(Time_rs, S_sens_num_bf);
 title('Number of active Sun sensors');
 
 %Plot Sun Sensor
 figure;
 subplot(2,3,1);
-plot(Orbit.Time,I_sun_sens(1,:),'r');
+plot(Time_rs,I_sun_sens(1,:),'r');
 hold on;
 plot(Orbit.Time,I_sun_sens(2,:),'g');
 plot(Orbit.Time,I_sun_sens(3,:),'c');

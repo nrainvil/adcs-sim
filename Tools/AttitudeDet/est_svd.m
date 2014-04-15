@@ -1,4 +1,4 @@
-function [ R ] = est_svd( b_k, eci_k )
+function [ R ] = est_svd(b_k, eci_k)
 %EST_SVD 
 % input: b_k = 3xN input vector, body frame
 % input: eci_k = 3xN input vector, eci frame

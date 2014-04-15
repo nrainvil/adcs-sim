@@ -26,7 +26,7 @@ MU_EARTH = 398600.4415;     % [km^3/s^2]
 % Note: We start at closest point to south pole to line up with our K
 OE.a        = 370 + R_EARTH;    % semi-major axis [km]
 OE.e        = 0;                % eccentricity
-OE.i        = deg2rad(98);      % inclination [rad]
+OE.i        = deg2rad(90);      % inclination [rad]
 OE.omega    = deg2rad(0);       % argument of perigee [rad]
 OE.RAAN     = deg2rad(30);       % right ascension of the ascending node [rad]
 OE.nu       = deg2rad(-90);     % true anomoly [rad]
@@ -111,14 +111,25 @@ I_sun_sens_ds = reshape(I_sun_sens_rs.data,length(I_sun_sens(:,1)),sens_length);
 B_mag_sens_ds = reshape(B_mag_sens_rs.data,length(B_mag_sens(:,1)),sens_length);
 B_sens_est = B_mag_sens_ds;
 
-%Estimate position from gyros
+%Estimate body rates from gyros
+G_rate_sens_ds = reshape(G_rate_sens_rs.data,length(G_rate_sens(:,1)),sens_length);
+G_rate_est = G_rate_sens_ds;
 
 % Generate Cosine Matrix
 B_ECI_ds = reshape(B_ECI_rs.data,length(Orbit.B_ECI(:,1)),sens_length);
 Sun_ECI_ds = reshape(Sun_ECI_rs.data,length(Orbit.Sun_ECI(:,1)),sens_length);
-for k=1:sens_length
-    b_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
-    eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k)];
+R_test(:,:,1) = R_eci_body(:,:,1); %START FROM KNOWN STATE (REMOVE)
+timestep = 1/fs_sens;
+for k=1:sens_length    
+    if k>1
+        w_ss = [0,-G_rate_est(3,k),G_rate_est(2,k); ...
+                G_rate_est(3,k), 0, -G_rate_est(1,k); ...
+                -G_rate_est(2,k), G_rate_est(1,k), 0;];
+        diff_x_est = w_ss*R_test(:,:,k-1);
+        R_test(:,:,k) = R_eci_bo(:,:,k-1) + diff_x_est*timestep;
+    end
+    b_k = [B_sens_est(:,k),S_sens_est_bf(:,k),[1;0;0],[0;0;1]];
+    eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k),R_test(:,1,k),R_test(:,3,k)];
     R_eci_body_est(:,:,k) = est_svd(b_k, eci_k);
 end
 
@@ -126,8 +137,27 @@ Sat_ECI_xhat_est = (reshape(R_eci_body_est(:,1,:),3,sens_length));
 Sat_ECI_yhat_est = (reshape(R_eci_body_est(:,2,:),3,sens_length));
 Sat_ECI_zhat_est = (reshape(R_eci_body_est(:,3,:),3,sens_length));
 
+%% Metrics
+for i=1:length(Sat_ECI_zhat(1,:))
+    find_time_ind = find(Time_rs <= Orbit.Time(i));
+    zhat_est = Sat_ECI_zhat_est(:,find_time_ind(length(find_time_ind)));
+    ram_err(:,i) = acosd(dot(zhat_est,Sat_ECI_zhat(:,i))./(norm(zhat_est)*norm(Sat_ECI_zhat(:,i))));
+end
+
+mean_ram_err = mean(ram_err);
+var_ram_err = var(ram_err);
+sigma_ram_err = sqrt(var_ram_err);
+fprintf('Mean Error: %2.2f Deg\nSigma: %2.2f Deg\n',mean_ram_err,sigma_ram_err);
+
 %% Plots
 %%Plots
+figure;
+plot(Orbit.Time,ram_err);
+hold on;
+plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
+ylabel('Error (degrees)');
+xlabel('Time (s)');
+
 figure;
 subplot(2,3,1);
 hold on;
@@ -189,14 +219,32 @@ ylabel('Deg/s');
 xlabel('Time (s)');
 hold off;
 subplot(2,1,2);
-plot(Time_rs,(180/pi())*G_rate_sens_rs.data(1,:),'r');
+plot(Time_rs,(180/pi())*G_rate_est(1,:),'r');
 ylabel('Deg/s');
 xlabel('Time (s)');
 hold on;
-plot(Time_rs,(180/pi())*G_rate_sens_rs.data(2,:),'g');
-plot(Time_rs,(180/pi())*G_rate_sens_rs.data(3,:),'b');
+plot(Time_rs,(180/pi())*G_rate_est(2,:),'g');
+plot(Time_rs,(180/pi())*G_rate_est(3,:),'b');
 hold off;
 
+%Plot Rate Gyro 
+figure;
+subplot(2,1,1);
+hold on;
+plot(Orbit.Time,reshape(R_eci_body(1,3,:),1,length(R_eci_body(1,3,:))),'r');
+plot(Orbit.Time,reshape(R_eci_body(2,3,:),1,length(R_eci_body(2,3,:))),'g');
+plot(Orbit.Time,reshape(R_eci_body(3,3,:),1,length(R_eci_body(3,3,:))),'b');
+title('Satellite x\_hat (ECI)');
+axis tight;
+hold off;
+subplot(2,1,2);
+hold on;
+plot(Time_rs,reshape(R_test(1,3,:),1,length(R_test(1,1,:))),'r');
+plot(Time_rs,reshape(R_test(2,3,:),1,length(R_test(2,1,:))),'g');
+plot(Time_rs,reshape(R_test(3,3,:),1,length(R_test(3,1,:))),'b');
+title('ATTITUDE FROM BODY RATE EST');
+axis tight;
+hold off;
 %Plot Magnetometer
 figure;
 subplot(2,1,1);
@@ -255,6 +303,8 @@ plot(Time_rs,I_sun_sens_ds(1,:),'r');
 hold on;
 plot(Time_rs,I_sun_sens_ds(2,:),'g');
 plot(Time_rs,I_sun_sens_ds(3,:),'c');
+ylabel('V');
+xlabel('Time (s)');
 hold off;
 title('+x');
 subplot(2,3,4);
@@ -262,6 +312,8 @@ plot(Time_rs,I_sun_sens_ds(4,:),'r');
 hold on;
 plot(Time_rs,I_sun_sens_ds(5,:),'g');
 plot(Time_rs,I_sun_sens_ds(6,:),'c');
+ylabel('V');
+xlabel('Time (s)');
 hold off;
 title('-x');
 subplot(2,3,2);
@@ -270,20 +322,28 @@ hold on;
 plot(Time_rs,I_sun_sens_ds(8,:),'g');
 plot(Time_rs,I_sun_sens_ds(9,:),'c');
 hold off;
+ylabel('V');
+xlabel('Time (s)');
 title('+y');
 subplot(2,3,5);
 plot(Time_rs,I_sun_sens_ds(10,:),'r');
 hold on;
 plot(Time_rs,I_sun_sens_ds(11,:),'g');
 plot(Time_rs,I_sun_sens_ds(12,:),'c');
+ylabel('V');
+xlabel('Time (s)');
 hold off;
 title('-y');
 subplot(2,3,3);
 plot(Time_rs,I_sun_sens_ds(13,:),'r');
+ylabel('V');
+xlabel('Time (s)');
 hold off;
 title('+z');
 subplot(2,3,6);
 plot(Time_rs,I_sun_sens_ds(14,:),'r');
+ylabel('V');
+xlabel('Time (s)');
 hold off;
 title('-z');
 

@@ -6,9 +6,9 @@ Sat_ECI_yhat = R_eci_body(:,2,:);
 Sat_ECI_zhat = R_eci_body(:,3,:);
 
 %3x Rate Gyros
-G_rate_sens(1,:) = rate_sens(reshape(R_dot_eci_body(3,2,:),1,length(R_dot_eci_body(3,2,:))));
-G_rate_sens(2,:) = rate_sens(reshape(R_dot_eci_body(1,3,:),1,length(R_dot_eci_body(1,3,:))));
-G_rate_sens(3,:) = rate_sens(reshape(R_dot_eci_body(2,1,:),1,length(R_dot_eci_body(2,1,:))));
+G_rate_sens(1,:) = rate_sens(reshape(R_dot_eci_body(3,2,:),1,length(R_dot_eci_body(3,2,:)));
+G_rate_sens(2,:) = rate_sens(reshape(R_dot_eci_body(1,3,:),1,length(R_dot_eci_body(1,3,:))R_dot_eci_body(1,3,:));
+G_rate_sens(3,:) = rate_sens(reshape(R_dot_eci_body(2,1,:),1,length(R_dot_eci_body(2,1,:))R_dot_eci_body(2,1,:));
 
 %3x Magnetometers
 B_mag_sens(1,:) = mag_sens(B_ECI,Sat_ECI_xhat);

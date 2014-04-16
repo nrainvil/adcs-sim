@@ -1,4 +1,4 @@
-function [posECI_km posECEF_km velECI_kmps S_ECI B_ECI]=GenPosVelSunMag(time,tle)
+function [posECI_km posECEF_km velECI_kmps S_ECI B_ECI S_ECI_noecl]=GenPosVelSunMag(time,tle)
 %This function generates spacecraft position, velocity, sun & magnetic field vectors
 % INPUTS:
 %   time: [1xN double] (UTC) time in matlab datenum format
@@ -11,8 +11,8 @@ function [posECI_km posECEF_km velECI_kmps S_ECI B_ECI]=GenPosVelSunMag(time,tle
 %   posECEF_km: [3xN double] (km) satellite position in the ECEF frame
 %   velECI_km: [3xN double] (km/s) satellite velocity in the ECI frame
 %   S_ECI: [3xN double] (unitless) unit vector from earth to sun in ECI frame 
-%       (in LEO, this vector is within 0.002° of the satellite to sun vector,
-%       smaller than the 0.01° accuracy of the empircal sun position model)
+%       (in LEO, this vector is within 0.002ï¿½ of the satellite to sun vector,
+%       smaller than the 0.01ï¿½ accuracy of the empircal sun position model)
 %   B_ECI: [3xN double] (Tesla) earth magnetic flux density at the satellite
 %       in the ECI frame, as calculed by the IGRF
 %
@@ -32,7 +32,7 @@ function [posECI_km posECEF_km velECI_kmps S_ECI B_ECI]=GenPosVelSunMag(time,tle
     end
 
 %% Determine satellite position vector for each time step
-    [posECI_km posECEF_km velECI_kmps S_ECI GST]=OrbitProp(time,tle);
+    [posECI_km posECEF_km velECI_kmps S_ECI GST S_ECI_noecl]=OrbitProp(time,tle);
     
 %% Use IGRF to Determine ECEF H-field vector vs. time
     B_ECEF=IGRF(posECEF_km); %[Tesla]
@@ -69,7 +69,7 @@ function [posECI_km posECEF_km velECI_kmps S_ECI B_ECI]=GenPosVelSunMag(time,tle
 %     ylabel('Spacecraft velocity magnitude [km/s]');
 %     
 end
-function [posECI_km posECEF_km velECI_kmps posEarth2SunECI_unit GST]=OrbitProp(time,tle)
+function [posECI_km posECEF_km velECI_kmps posEarth2SunECI_unit GST posEarth2SunECI_noecl_unit]=OrbitProp(time,tle)
 %% Constants
     % distance from earth to sun
       AU = 149597871; %[km]
@@ -151,9 +151,10 @@ function [posECI_km posECEF_km velECI_kmps posEarth2SunECI_unit GST]=OrbitProp(t
     penumbraInds = intersect(find(abs(thetaE-thetaS)<theta),find(theta<thetaE+thetaS));
     
 %% Set sun vector during eclipse to zero
+    posEarth2SunECI_noecl_unit = posEarth2SunECI_unit;
     posEarth2SunECI_unit(:,umbraInds)=0; %#ok<FNDSB>
     posEarth2SunECI_unit(:,penumbraInds)=0;
-
+    
 %     figure(1);
 %     plot(tV,theta,tV,thetaE-thetaS,tV(umbraInds),theta(umbraInds),'r.',tV(penumbraInds),theta(penumbraInds),'y.');
 %     ylabel('Angle between center of earth & sun [degrees]');

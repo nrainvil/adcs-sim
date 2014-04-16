@@ -22,13 +22,14 @@
 function [ Orbit ] = GenOrbit(time, TLE)
 
 % use David Gerhardts Orbit propagator to generate Orbit 
-[posECI_km, posECEF_km, velECI_kmps, S_ECI, B_ECI]=GenPosVelSunMag(time,TLE);
+[posECI_km, posECEF_km, velECI_kmps, S_ECI, B_ECI, S_ECI_noecl]=GenPosVelSunMag(time,TLE);
 
 % put orbit parameters in Orbit Structure
 Orbit.posECEF_km = posECEF_km;
 Orbit.posECI_km = posECI_km;
 Orbit.velECI_kmps = velECI_kmps;
 Orbit.Sun_ECI = S_ECI;
+Orbit.Sun_ECI_noecl = S_ECI_noecl;
 Orbit.B_ECI = B_ECI;
 Orbit.Time = (time - time(1))*24*3600; % [sec]
 

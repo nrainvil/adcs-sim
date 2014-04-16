@@ -7,6 +7,7 @@
 %%
 clear all;
 close all;
+warning('off','Control:analysis:LsimStartTime');
 
 %% Load Orbit and attitude toolbox
 wdir = pwd;
@@ -57,7 +58,8 @@ Sat_ECI_zhat(2,:) = -1*Orbit.velECI_kmps(2,:)./sqrt(sum(abs(Orbit.velECI_kmps).^
 Sat_ECI_zhat(3,:) = -1*Orbit.velECI_kmps(3,:)./sqrt(sum(abs(Orbit.velECI_kmps).^2,1));
 
 for i=1:length(Orbit.velECI_kmps(1,:))
-    Sat_ECI_xhat(:,i) = ortho_norm(-Orbit.posECI_km(:,i),Sat_ECI_zhat(:,i));
+    Sat_ECI_xhat(:,i) = ortho_norm(-Orbit.posECI_km(:,i),Sat_ECI_zhat(:,i)); % Nadir pointing
+    %Sat_ECI_xhat(:,i) = ortho_norm(Orbit.Sun_ECI_noecl(:,i),Sat_ECI_zhat(:,i)); % Sun Pointing
     Sat_ECI_yhat(:,i) = cross(Sat_ECI_zhat(:,i),Sat_ECI_xhat(:,i));
 end
 
@@ -141,22 +143,66 @@ Sat_ECI_zhat_est = (reshape(R_eci_body_est(:,3,:),3,sens_length));
 for i=1:length(Sat_ECI_zhat(1,:))
     find_time_ind = find(Time_rs <= Orbit.Time(i));
     zhat_est = Sat_ECI_zhat_est(:,find_time_ind(length(find_time_ind)));
+    xhat_est = Sat_ECI_xhat_est(:,find_time_ind(length(find_time_ind)));
     ram_err(:,i) = acosd(dot(zhat_est,Sat_ECI_zhat(:,i))./(norm(zhat_est)*norm(Sat_ECI_zhat(:,i))));
+    sun_err(:,i) = acosd(dot(xhat_est,Sat_ECI_xhat(:,i))./(norm(xhat_est)*norm(Sat_ECI_xhat(:,i))));
 end
 
 mean_ram_err = mean(ram_err);
 var_ram_err = var(ram_err);
 sigma_ram_err = sqrt(var_ram_err);
-fprintf('Mean Error: %2.2f Deg\nSigma: %2.2f Deg\n',mean_ram_err,sigma_ram_err);
+mean_sun_err = mean(sun_err);
+var_sun_err = var(sun_err);
+sigma_sun_err = sqrt(var_sun_err);
+fprintf('Mean Ram Error:          %2.2f Deg     Sigma: %2.2f Deg\n',mean_ram_err,sigma_ram_err);
+fprintf('Mean Sun Pointing Error: %2.2f Deg     Sigma: %2.2f Deg\n',mean_sun_err,sigma_sun_err);
+
+
+deg_v = 0:.01:max(ram_err);
+ram_err_1_sigma = 0;
+ram_err_3_sigma = 0;
+for i = 1:length(deg_v)
+    ram_err_cdf(:,i) = nnz(ram_err(:,:) < deg_v(i))/length(ram_err);
+    if ram_err_cdf(:,i) >= .6827 && ram_err_1_sigma == 0
+        ram_err_1_sigma = deg_v(i);
+    end
+    if ram_err_cdf(:,i) >= .9973 && ram_err_3_sigma == 0
+        ram_err_3_sigma = deg_v(i);
+    end
+end
 
 %% Plots
 %%Plots
 figure;
+plot(deg_v,ram_err_cdf);
+title('Ram Error Cumulative Histogram');
+hold on;
+yL = get(gca,'YLim');
+line([ram_err_1_sigma,ram_err_1_sigma],yL,'Color','g');
+line([ram_err_3_sigma,ram_err_3_sigma],yL,'Color','r');
+
+figure;
+subplot(2,1,1);
 plot(Orbit.Time,ram_err);
+title('Ram Pointing Error');
 hold on;
 plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
 ylabel('Error (degrees)');
 xlabel('Time (s)');
+subplot(2,1,2);
+plot(Orbit.Time,sun_err);
+title('Sun Pointing Error');
+hold on;
+plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
+ylabel('Error (degrees)');
+xlabel('Time (s)');
+
+% figure;hist(ram_err,50);hold on;
+% yL = get(gca,'YLim');
+% line([mean_ram_err,mean_ram_err],yL,'Color','g');
+% line([mean_ram_err+sigma_ram_err,mean_ram_err+sigma_ram_err],yL,'Color','r');
+% xlabel('Error (degrees)');
+% ylabel('Count');
 
 figure;
 subplot(2,3,1);
@@ -212,6 +258,7 @@ hold off;
 figure;
 subplot(2,1,1);
 plot(Orbit.Time,(180/pi())*Sat_ECI_xrate,'r');
+title('Body Rates');
 hold on;
 plot(Orbit.Time,(180/pi())*Sat_ECI_yrate,'g');
 plot(Orbit.Time,(180/pi())*Sat_ECI_zrate,'b');
@@ -220,6 +267,7 @@ xlabel('Time (s)');
 hold off;
 subplot(2,1,2);
 plot(Time_rs,(180/pi())*G_rate_est(1,:),'r');
+title('Body Rates from Gyro');
 ylabel('Deg/s');
 xlabel('Time (s)');
 hold on;

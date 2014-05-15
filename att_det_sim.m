@@ -40,9 +40,12 @@ Epoch = datenum('01 May 2015 00:00:00'); % [UTC]
 TLE = BuildTLE(SatNum,SatClass,IntDsgntr,Epoch,OE);
 
 %% Simulation time
+julienDate = Jday(2015,5,1,0);
+j2000_offset = 2451545;
+j2000Date = julienDate -j2000_offset;
 startTime = datenum('01 May 2015 00:00:00');
-stopTime  = datenum('01 May 2015 04:00:00');
-timeStep = 10; % [sec]
+stopTime  = datenum('01 May 2015 01:32:00');
+timeStep = .2; % [sec] (5 Hz)
 time = startTime:timeStep/(3600*24):stopTime;
 
 Orbit = GenOrbit(time, TLE);
@@ -89,6 +92,7 @@ R_dot_eci_body(:,:,1) = reshape(R_dot_eci_body(:,:,2),3,3);
 [B_mag_sens, I_sun_sens, G_rate_sens, norm_sun_sens] = sc_sens_sim(R_eci_body, R_dot_eci_body, Orbit.Sun_ECI,Orbit.B_ECI);
 
 %Discrete
+%[B_mag_sens_rs, I_sun_sens_rs, G_rate_sens_rs, Time_rs]
 fs_sens = 1/20; %Hz
 Sun_ECI_ts = timeseries(Orbit.Sun_ECI,Orbit.Time,'name','I_eci');
 I_sun_sens_ts = timeseries(I_sun_sens,Orbit.Time,'name','I_bf');
@@ -154,9 +158,6 @@ sigma_ram_err = sqrt(var_ram_err);
 mean_sun_err = mean(sun_err);
 var_sun_err = var(sun_err);
 sigma_sun_err = sqrt(var_sun_err);
-fprintf('Mean Ram Error:          %2.2f Deg     Sigma: %2.2f Deg\n',mean_ram_err,sigma_ram_err);
-fprintf('Mean Sun Pointing Error: %2.2f Deg     Sigma: %2.2f Deg\n',mean_sun_err,sigma_sun_err);
-
 
 deg_v = 0:.01:max(ram_err);
 ram_err_1_sigma = 0;
@@ -171,6 +172,9 @@ for i = 1:length(deg_v)
     end
 end
 
+fprintf('Mean Ram Error:          %2.2f Deg     Sigma: %2.2f Deg\n',mean_ram_err,ram_err_1_sigma);
+fprintf('Mean Sun Pointing Error: %2.2f Deg     \n',mean_sun_err);
+
 %% Plots
 %%Plots
 figure;
@@ -180,22 +184,23 @@ hold on;
 yL = get(gca,'YLim');
 line([ram_err_1_sigma,ram_err_1_sigma],yL,'Color','g');
 line([ram_err_3_sigma,ram_err_3_sigma],yL,'Color','r');
+xlabel('Error (deg)');
 
-figure;
-subplot(2,1,1);
-plot(Orbit.Time,ram_err);
-title('Ram Pointing Error');
-hold on;
-plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
-ylabel('Error (degrees)');
-xlabel('Time (s)');
-subplot(2,1,2);
-plot(Orbit.Time,sun_err);
-title('Sun Pointing Error');
-hold on;
-plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
-ylabel('Error (degrees)');
-xlabel('Time (s)');
+%figure;
+%subplot(2,1,1);
+%plot(Orbit.Time,ram_err);
+%title('Ram Pointing Error');
+%hold on;
+%plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
+%ylabel('Error (degrees)');
+%xlabel('Time (s)');
+%subplot(2,1,2);
+%plot(Orbit.Time,sun_err);
+%title('Sun Pointing Error');
+%hold on;
+%plot(Orbit.Time,2*ones(length(Orbit.Time)),'r');
+%ylabel('Error (degrees)');
+%xlabel('Time (s)');
 
 % figure;hist(ram_err,50);hold on;
 % yL = get(gca,'YLim');
@@ -204,196 +209,196 @@ xlabel('Time (s)');
 % xlabel('Error (degrees)');
 % ylabel('Count');
 
-figure;
-subplot(2,3,1);
-hold on;
-plot(Orbit.Time,Sat_ECI_xhat(1,:),'r');
-plot(Orbit.Time,Sat_ECI_xhat(2,:),'g');
-plot(Orbit.Time,Sat_ECI_xhat(3,:),'b');
-title('Satellite x\_hat (ECI)')
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(2,3,2);
-hold on;
-plot(Orbit.Time,Sat_ECI_yhat(1,:),'r');
-plot(Orbit.Time,Sat_ECI_yhat(2,:),'g');
-plot(Orbit.Time,Sat_ECI_yhat(3,:),'b');
-title('Satellite y\_hat (ECI)')
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(2,3,3);
-hold on;
-plot(Orbit.Time,Sat_ECI_zhat(1,:),'r');
-plot(Orbit.Time,Sat_ECI_zhat(2,:),'g');
-plot(Orbit.Time,Sat_ECI_zhat(3,:),'b');
-title('Satellite z\_hat (ECI)')
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(2,3,4);
-hold on;
-plot(Time_rs,Sat_ECI_xhat_est(1,:),'r');
-plot(Time_rs,Sat_ECI_xhat_est(2,:),'g');
-plot(Time_rs,Sat_ECI_xhat_est(3,:),'b');
-title('Satellite x\_hat Estimate (ECI)')
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(2,3,5);
-hold on;
-plot(Time_rs,Sat_ECI_yhat_est(1,:),'r');
-plot(Time_rs,Sat_ECI_yhat_est(2,:),'g');
-plot(Time_rs,Sat_ECI_yhat_est(3,:),'b');
-title('Satellite y\_hat estimate (ECI)')
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(2,3,6);
-hold on;
-plot(Time_rs,Sat_ECI_zhat_est(1,:),'r');
-plot(Time_rs,Sat_ECI_zhat_est(2,:),'g');
-plot(Time_rs,Sat_ECI_zhat_est(3,:),'b');
-title('Satellite z\_hat estimate (ECI)')
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-
-%Plot Body Rates
-figure;
-subplot(2,1,1);
-plot(Orbit.Time,(180/pi())*Sat_ECI_xrate,'r');
-title('Body Rates');
-hold on;
-plot(Orbit.Time,(180/pi())*Sat_ECI_yrate,'g');
-plot(Orbit.Time,(180/pi())*Sat_ECI_zrate,'b');
-ylabel('Deg/s');
-xlabel('Time (s)');
-hold off;
-subplot(2,1,2);
-plot(Time_rs,(180/pi())*G_rate_est(1,:),'r');
-title('Body Rates from Gyro');
-ylabel('Deg/s');
-xlabel('Time (s)');
-hold on;
-plot(Time_rs,(180/pi())*G_rate_est(2,:),'g');
-plot(Time_rs,(180/pi())*G_rate_est(3,:),'b');
-hold off;
-
-%Plot Rate Gyro 
-figure;
-subplot(2,1,1);
-hold on;
-plot(Orbit.Time,reshape(R_eci_body(1,3,:),1,length(R_eci_body(1,3,:))),'r');
-plot(Orbit.Time,reshape(R_eci_body(2,3,:),1,length(R_eci_body(2,3,:))),'g');
-plot(Orbit.Time,reshape(R_eci_body(3,3,:),1,length(R_eci_body(3,3,:))),'b');
-title('Satellite x\_hat (ECI)');
-axis tight;
-hold off;
-subplot(2,1,2);
-hold on;
-plot(Time_rs,reshape(R_test(1,3,:),1,length(R_test(1,1,:))),'r');
-plot(Time_rs,reshape(R_test(2,3,:),1,length(R_test(2,1,:))),'g');
-plot(Time_rs,reshape(R_test(3,3,:),1,length(R_test(3,1,:))),'b');
-title('ATTITUDE FROM BODY RATE EST');
-axis tight;
-hold off;
+%figure;
+%subplot(2,3,1);
+%hold on;
+%plot(Orbit.Time,Sat_ECI_xhat(1,:),'r');
+%plot(Orbit.Time,Sat_ECI_xhat(2,:),'g');
+%plot(Orbit.Time,Sat_ECI_xhat(3,:),'b');
+%title('Satellite x\_hat (ECI)')
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%subplot(2,3,2);
+%hold on;
+%plot(Orbit.Time,Sat_ECI_yhat(1,:),'r');
+%plot(Orbit.Time,Sat_ECI_yhat(2,:),'g');
+%plot(Orbit.Time,Sat_ECI_yhat(3,:),'b');
+%title('Satellite y\_hat (ECI)')
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%subplot(2,3,3);
+%hold on;
+%plot(Orbit.Time,Sat_ECI_zhat(1,:),'r');
+%plot(Orbit.Time,Sat_ECI_zhat(2,:),'g');
+%plot(Orbit.Time,Sat_ECI_zhat(3,:),'b');
+%title('Satellite z\_hat (ECI)')
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%subplot(2,3,4);
+%hold on;
+%plot(Time_rs,Sat_ECI_xhat_est(1,:),'r');
+%plot(Time_rs,Sat_ECI_xhat_est(2,:),'g');
+%plot(Time_rs,Sat_ECI_xhat_est(3,:),'b');
+%title('Satellite x\_hat Estimate (ECI)')
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%subplot(2,3,5);
+%hold on;
+%plot(Time_rs,Sat_ECI_yhat_est(1,:),'r');
+%plot(Time_rs,Sat_ECI_yhat_est(2,:),'g');
+%plot(Time_rs,Sat_ECI_yhat_est(3,:),'b');
+%title('Satellite y\_hat estimate (ECI)')
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%subplot(2,3,6);
+%hold on;
+%plot(Time_rs,Sat_ECI_zhat_est(1,:),'r');
+%plot(Time_rs,Sat_ECI_zhat_est(2,:),'g');
+%plot(Time_rs,Sat_ECI_zhat_est(3,:),'b');
+%title('Satellite z\_hat estimate (ECI)')
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%
+%%Plot Body Rates
+%figure;
+%subplot(2,1,1);
+%plot(Orbit.Time,(180/pi())*Sat_ECI_xrate,'r');
+%title('Body Rates');
+%hold on;
+%plot(Orbit.Time,(180/pi())*Sat_ECI_yrate,'g');
+%plot(Orbit.Time,(180/pi())*Sat_ECI_zrate,'b');
+%ylabel('Deg/s');
+%xlabel('Time (s)');
+%hold off;
+%subplot(2,1,2);
+%plot(Time_rs,(180/pi())*G_rate_est(1,:),'r');
+%title('Body Rates from Gyro');
+%ylabel('Deg/s');
+%xlabel('Time (s)');
+%hold on;
+%plot(Time_rs,(180/pi())*G_rate_est(2,:),'g');
+%plot(Time_rs,(180/pi())*G_rate_est(3,:),'b');
+%hold off;
+%
+%%Plot Rate Gyro 
+%figure;
+%subplot(2,1,1);
+%hold on;
+%plot(Orbit.Time,reshape(R_eci_body(1,3,:),1,length(R_eci_body(1,3,:))),'r');
+%plot(Orbit.Time,reshape(R_eci_body(2,3,:),1,length(R_eci_body(2,3,:))),'g');
+%plot(Orbit.Time,reshape(R_eci_body(3,3,:),1,length(R_eci_body(3,3,:))),'b');
+%title('Satellite x\_hat (ECI)');
+%axis tight;
+%hold off;
+%subplot(2,1,2);
+%hold on;
+%plot(Time_rs,reshape(R_test(1,3,:),1,length(R_test(1,1,:))),'r');
+%plot(Time_rs,reshape(R_test(2,3,:),1,length(R_test(2,1,:))),'g');
+%plot(Time_rs,reshape(R_test(3,3,:),1,length(R_test(3,1,:))),'b');
+%title('ATTITUDE FROM BODY RATE EST');
+%axis tight;
+%hold off;
 %Plot Magnetometer
-figure;
-subplot(2,1,1);
-hold on;
-plot(Orbit.Time,Orbit.B_ECI(1,:),'r');
-plot(Orbit.Time,Orbit.B_ECI(2,:),'g');
-plot(Orbit.Time,Orbit.B_ECI(3,:),'b');
-title('Magnetic Field Vector');
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-subplot(2,1,2);
-plot(Time_rs,B_sens_est(1,:),'r');
-hold on;
-plot(Time_rs,B_sens_est(2,:),'g');
-plot(Time_rs,B_sens_est(3,:),'b');
-title('Magnetic Field Vector Estimate');
-legend('B_x','B_y','B_z');
-xlabel('Time');
-ylabel('Magnetic Field Strength (Magnetometer)')
-hold off;
+%figure;
+%subplot(2,1,1);
+%hold on;
+%plot(Orbit.Time,Orbit.B_ECI(1,:),'r');
+%plot(Orbit.Time,Orbit.B_ECI(2,:),'g');
+%plot(Orbit.Time,Orbit.B_ECI(3,:),'b');
+%title('Magnetic Field Vector');
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%subplot(2,1,2);
+%plot(Time_rs,B_sens_est(1,:),'r');
+%hold on;
+%plot(Time_rs,B_sens_est(2,:),'g');
+%plot(Time_rs,B_sens_est(3,:),'b');
+%title('Magnetic Field Vector Estimate');
+%legend('B_x','B_y','B_z');
+%xlabel('Time');
+%ylabel('Magnetic Field Strength (Magnetometer)')
+%hold off;
 
 %Sun Estimate
-figure;
-subplot(3,1,1);
-hold on;
-plot(Orbit.Time,Orbit.Sun_ECI(1,:),'r');
-plot(Orbit.Time,Orbit.Sun_ECI(2,:),'g');
-plot(Orbit.Time,Orbit.Sun_ECI(3,:),'b');
-title('Sun Vector');
-legend('ECI\_X','ECI\_Y','ECI\_Z');
-hold off;
-% subplot(4,1,2);
-% hold on;
-% plot(Orbit.Time,S_sens_est(1,:),'r');
-% plot(Orbit.Time,S_sens_est(2,:),'g');
-% plot(Orbit.Time,S_sens_est(3,:),'b');
-% title('Sun Vector Estimate');
-% legend('ECI\_X','ECI\_Y','ECI\_Z');
-% hold off;
-subplot(3,1,2);
-hold on;
-plot(Time_rs,S_sens_est_bf(1,:),'r');
-plot(Time_rs,S_sens_est_bf(2,:),'g');
-plot(Time_rs,S_sens_est_bf(3,:),'b');
-title('Sun Vector Estimate');
-legend('BF\_X','BF\_Y','BF\_Z');
-hold off;
-subplot(3,1,3);
-plot(Time_rs, S_sens_num_bf);
-title('Number of active Sun sensors');
+%figure;
+%subplot(3,1,1);
+%hold on;
+%plot(Orbit.Time,Orbit.Sun_ECI(1,:),'r');
+%plot(Orbit.Time,Orbit.Sun_ECI(2,:),'g');
+%plot(Orbit.Time,Orbit.Sun_ECI(3,:),'b');
+%title('Sun Vector');
+%legend('ECI\_X','ECI\_Y','ECI\_Z');
+%hold off;
+%% subplot(4,1,2);
+%% hold on;
+%% plot(Orbit.Time,S_sens_est(1,:),'r');
+%% plot(Orbit.Time,S_sens_est(2,:),'g');
+%% plot(Orbit.Time,S_sens_est(3,:),'b');
+%% title('Sun Vector Estimate');
+%% legend('ECI\_X','ECI\_Y','ECI\_Z');
+%% hold off;
+%subplot(3,1,2);
+%hold on;
+%plot(Time_rs,S_sens_est_bf(1,:),'r');
+%plot(Time_rs,S_sens_est_bf(2,:),'g');
+%plot(Time_rs,S_sens_est_bf(3,:),'b');
+%title('Sun Vector Estimate');
+%legend('BF\_X','BF\_Y','BF\_Z');
+%hold off;
+%subplot(3,1,3);
+%plot(Time_rs, S_sens_num_bf);
+%title('Number of active Sun sensors');
 
 %Plot Sun Sensor
-figure;
-subplot(2,3,1);
-plot(Time_rs,I_sun_sens_ds(1,:),'r');
-hold on;
-plot(Time_rs,I_sun_sens_ds(2,:),'g');
-plot(Time_rs,I_sun_sens_ds(3,:),'c');
-ylabel('V');
-xlabel('Time (s)');
-hold off;
-title('+x');
-subplot(2,3,4);
-plot(Time_rs,I_sun_sens_ds(4,:),'r');
-hold on;
-plot(Time_rs,I_sun_sens_ds(5,:),'g');
-plot(Time_rs,I_sun_sens_ds(6,:),'c');
-ylabel('V');
-xlabel('Time (s)');
-hold off;
-title('-x');
-subplot(2,3,2);
-plot(Time_rs,I_sun_sens_ds(7,:),'r');
-hold on;
-plot(Time_rs,I_sun_sens_ds(8,:),'g');
-plot(Time_rs,I_sun_sens_ds(9,:),'c');
-hold off;
-ylabel('V');
-xlabel('Time (s)');
-title('+y');
-subplot(2,3,5);
-plot(Time_rs,I_sun_sens_ds(10,:),'r');
-hold on;
-plot(Time_rs,I_sun_sens_ds(11,:),'g');
-plot(Time_rs,I_sun_sens_ds(12,:),'c');
-ylabel('V');
-xlabel('Time (s)');
-hold off;
-title('-y');
-subplot(2,3,3);
-plot(Time_rs,I_sun_sens_ds(13,:),'r');
-ylabel('V');
-xlabel('Time (s)');
-hold off;
-title('+z');
-subplot(2,3,6);
-plot(Time_rs,I_sun_sens_ds(14,:),'r');
-ylabel('V');
-xlabel('Time (s)');
-hold off;
-title('-z');
+%figure;
+%subplot(2,3,1);
+%plot(Time_rs,I_sun_sens_ds(1,:),'r');
+%hold on;
+%plot(Time_rs,I_sun_sens_ds(2,:),'g');
+%plot(Time_rs,I_sun_sens_ds(3,:),'c');
+%ylabel('V');
+%xlabel('Time (s)');
+%hold off;
+%title('+x');
+%subplot(2,3,4);
+%plot(Time_rs,I_sun_sens_ds(4,:),'r');
+%hold on;
+%plot(Time_rs,I_sun_sens_ds(5,:),'g');
+%plot(Time_rs,I_sun_sens_ds(6,:),'c');
+%ylabel('V');
+%xlabel('Time (s)');
+%hold off;
+%title('-x');
+%subplot(2,3,2);
+%plot(Time_rs,I_sun_sens_ds(7,:),'r');
+%hold on;
+%plot(Time_rs,I_sun_sens_ds(8,:),'g');
+%plot(Time_rs,I_sun_sens_ds(9,:),'c');
+%hold off;
+%ylabel('V');
+%xlabel('Time (s)');
+%title('+y');
+%subplot(2,3,5);
+%plot(Time_rs,I_sun_sens_ds(10,:),'r');
+%hold on;
+%plot(Time_rs,I_sun_sens_ds(11,:),'g');
+%plot(Time_rs,I_sun_sens_ds(12,:),'c');
+%ylabel('V');
+%xlabel('Time (s)');
+%hold off;
+%title('-y');
+%subplot(2,3,3);
+%plot(Time_rs,I_sun_sens_ds(13,:),'r');
+%ylabel('V');
+%xlabel('Time (s)');
+%hold off;
+%title('+z');
+%subplot(2,3,6);
+%plot(Time_rs,I_sun_sens_ds(14,:),'r');
+%ylabel('V');
+%xlabel('Time (s)');
+%hold off;
+%title('-z');
 
 
 

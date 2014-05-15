@@ -4,8 +4,8 @@ function [ G_rate ] = rate_sens(true_w)
 % %--- Set MEMS parameters --------------------------------------------------
 % samp_freq          = 1/step;          % gyro sampling frequency [Hz]
 % sensitivity        = 0.010;     % 8.75 mdps/digit
-gyro_bias          = 0;           % Static bias (dps)
-rate_noise_density = 0.014;        % [dps/sqrt(Hz)] (fft)
+gyro_bias          = 0.0;           % Static bias (dps)
+rate_noise_density = .014; %0.014;        % [dps/sqrt(Hz)] (fft) (Epson .004) (ADIS .05)
 % upper_saturation   = 2^15;        % 16 bits resolution
 % lower_saturation   = -2^15;   
 wn                 = 1000*2*pi;   % MEMS dynamics [rad/s]

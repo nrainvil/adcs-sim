@@ -4,9 +4,10 @@ function [ b_sens_v ] = mag_sens( b_v, n_h )
     n_std_dev = 125e-9; %Noise floor (ADIS16404)
     %n_std_dev = 410e-9; %STM
     
-    for i = 1:length(b_v)
+    for i = 1:length(b_v(1,:))
         n_b = n_std_dev*randn();
-        b_sens_v(1,i) = dot(b_v(:,i),n_h(:,i)) + n_b;
+        b_sens = dot(b_v(:,i),n_h(:,i)) + n_b;
+	b_sens_v(1,i) = b_sens;
     end
 end
 

@@ -1,19 +1,15 @@
-function [ B_mag_sens, I_sun_sens, G_rate_sens, norm_sun_sens ] = sc_sens_sim(R_eci_body, R_dot_eci_body, Sun_ECI, B_ECI)
+function [ B_mag_sens, I_sun_sens,  norm_sun_sens ] = sc_sens_sim(R_eci_body,  Sun_ECI, B_ECI, albedo_v)
 %SC_SENSOR_SIM
 %Simulate Attitude Determination Sensors
 Sat_ECI_xhat = R_eci_body(:,1,:);
 Sat_ECI_yhat = R_eci_body(:,2,:);
 Sat_ECI_zhat = R_eci_body(:,3,:);
 
-%3x Rate Gyros
-G_rate_sens(1,:) = rate_sens(reshape(R_dot_eci_body(3,2,:),1,length(R_dot_eci_body(3,2,:))));
-G_rate_sens(2,:) = rate_sens(reshape(R_dot_eci_body(1,3,:),1,length(R_dot_eci_body(1,3,:))));
-G_rate_sens(3,:) = rate_sens(reshape(R_dot_eci_body(2,1,:),1,length(R_dot_eci_body(2,1,:))));
-
 %3x Magnetometers
-B_mag_sens(1,:) = mag_sens(B_ECI,Sat_ECI_xhat);
-B_mag_sens(2,:) = mag_sens(B_ECI,Sat_ECI_yhat);
-B_mag_sens(3,:) = mag_sens(B_ECI,Sat_ECI_zhat);
+%B_mag_sens(1,:) = mag_sens(B_ECI,Sat_ECI_xhat);
+%B_mag_sens(2,:) = mag_sens(B_ECI,Sat_ECI_yhat);
+%B_mag_sens(3,:) = mag_sens(B_ECI,Sat_ECI_zhat);
+B_mag_sens = mag_sens_3axis(B_ECI,Sat_ECI_xhat,Sat_ECI_zhat);
 
 %14x Sun sensors (RAX2 positioning)
 norm_sun_sens_eci(1,:,:)  = rot_azel(Sat_ECI_xhat, Sat_ECI_zhat, 17,-10);
@@ -48,6 +44,6 @@ norm_sun_sens_bf(12,:,:) = rot_azel([1;0;0], [0;0;1], -90,-20);
 norm_sun_sens_bf(13,:,:) = rot_azel([1;0;0], [0;0;1], 0,90);
 norm_sun_sens_bf(14,:,:) = rot_azel([1;0;0], [0;0;1], 0,-90);
 
-[I_sun_sens, I_sun_sens_alpha]   = sun_sens(Sun_ECI,norm_sun_sens_eci); 
+[I_sun_sens, I_sun_sens_alpha]   = sun_sens(Sun_ECI,albedo_v,norm_sun_sens_eci); 
 norm_sun_sens = norm_sun_sens_bf;
 end

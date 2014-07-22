@@ -26,7 +26,7 @@ function [ I, alpha ] = sun_sens( s_hat, a_v, n_hat_3d)
             end 
 
 	    %Albedo current
-	    I_alb = 0;
+	    I_alb = 0; %Init
 	    albedo_v = (I_0/CONST.AM0)*a_v;
 	    albedo_hat_v = albedo_v./(ones(3,1)*sqrt(sum(albedo_v.^2)));
 	    albedo_hat_v(isnan(albedo_hat_v)) = 0;
@@ -36,7 +36,7 @@ function [ I, alpha ] = sun_sens( s_hat, a_v, n_hat_3d)
             alpha_mask_v(alpha_mask_v ~= 0) = 1;
 	    I_alb = alpha_mask_v.*sum((n_hat(:,n)*ones(1,length(albedo_hat_v(1,:)))).*albedo_v);
 
-	    I(k,n) = I_sun + sum(I_alb) + n_g;
+	    I(k,n) = I_sun + n_g + sum(I_alb);
 
 %	    for l = 1:L
 %		    albedo_hat = (albedo_v(:,l))/norm(albedo_v(:,l));

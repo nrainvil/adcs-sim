@@ -6,7 +6,7 @@
 
 %%
 clear all;
-%close all;
+close all;
 warning('off','Control:analysis:LsimStartTime');
 
 %% Load Orbit and attitude toolbox
@@ -45,8 +45,8 @@ julienDate = Jday(2015,5,1,0);
 j2000_offset = 2451545;
 j2000Date = julienDate -j2000_offset;
 startTime = datenum('01 May 2015 00:00:00');
-%stopTime  = datenum('01 May 2015 00:32:00');
-stopTime  = datenum('01 May 2015 01:32:00');
+stopTime  = datenum('01 May 2015 00:12:00');
+%stopTime  = datenum('01 May 2015 01:32:00');
 timeStep = .5;%.2; % [sec] (5 Hz)
 time = startTime:timeStep/(3600*24):stopTime;
 
@@ -147,7 +147,7 @@ Sun_ECI_ds = reshape(Sun_ECI_rs.data,length(Orbit.Sun_ECI(:,1)),sens_length);
 timestep = 1/fs_sens;
 drift_bias = [0;0;0];
 z_k = 0;
-P_k = eye(6,6);
+P_k = eye(4,4);
 for k=1:sens_length    
     %MEKF
     if S_sens_num_bf(:,k) > 2 %Check that Sun Vector estimate is accurate
@@ -159,8 +159,8 @@ for k=1:sens_length
     	z_k = [B_sens_est(:,k)];
 	R_k = eye(3,3); %Meas Noise Cov
     end
-    if 0%k>1
-        [R_eci_body_est(:,:,k) P_k]= est_mekf(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, R_k, timestep);
+    if k>1
+        [R_eci_body_est(:,:,k) P_k]= est_mekf_b(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, R_k, timestep);
     else	
 	R_eci_body_est(:,:,k) = est_svd(z_k,eci_k);
     end
@@ -379,7 +379,7 @@ plot(Time_rs,Sat_ECI_xhat_est(2,:),'g');
 plot(Time_rs,Sat_ECI_xhat_est(3,:),'b');
 title('Satellite x\_hat Estimate (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
-axis([0,length(Time_rs)/2,-2,2]);
+axis([0,length(Time_rs)/2,-1,1]);
 hold off;
 subplot(2,3,5);
 hold on;
@@ -388,7 +388,7 @@ plot(Time_rs,Sat_ECI_yhat_est(2,:),'g');
 plot(Time_rs,Sat_ECI_yhat_est(3,:),'b');
 title('Satellite y\_hat estimate (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
-axis([0,length(Time_rs)/2,-2,2]);
+axis([0,length(Time_rs)/2,-1,1]);
 hold off;
 subplot(2,3,6);
 hold on;
@@ -397,130 +397,7 @@ plot(Time_rs,Sat_ECI_zhat_est(2,:),'g');
 plot(Time_rs,Sat_ECI_zhat_est(3,:),'b');
 title('Satellite z\_hat estimate (ECI)')
 legend('ECI\_X','ECI\_Y','ECI\_Z');
-axis([0,length(Time_rs)/2,-2,2]);
+axis([0,length(Time_rs)/2,-1,1]);
 hold off;
 ;
 
-%%Plot Rate Gyro 
-%figure;
-%subplot(2,1,1);
-%hold on;
-%plot(Orbit.Time,reshape(R_eci_body(1,3,:),1,length(R_eci_body(1,3,:))),'r');
-%plot(Orbit.Time,reshape(R_eci_body(2,3,:),1,length(R_eci_body(2,3,:))),'g');
-%plot(Orbit.Time,reshape(R_eci_body(3,3,:),1,length(R_eci_body(3,3,:))),'b');
-%title('Satellite x\_hat (ECI)');
-%axis tight;
-%hold off;
-%subplot(2,1,2);
-%hold on;
-%plot(Time_rs,reshape(R_test(1,3,:),1,length(R_test(1,1,:))),'r');
-%plot(Time_rs,reshape(R_test(2,3,:),1,length(R_test(2,1,:))),'g');
-%plot(Time_rs,reshape(R_test(3,3,:),1,length(R_test(3,1,:))),'b');
-%title('ATTITUDE FROM BODY RATE EST');
-%axis tight;
-%hold off;
-
-
-%Plot Sun Sensor
-%figure;
-%subplot(2,3,1);
-%plot(Time_rs,I_sun_sens_ds(1,:),'r');
-%hold on;
-%plot(Time_rs,I_sun_sens_ds(2,:),'g');
-%plot(Time_rs,I_sun_sens_ds(3,:),'c');
-%ylabel('V');
-%xlabel('Time (s)');
-%hold off;
-%title('+x');
-%subplot(2,3,4);
-%plot(Time_rs,I_sun_sens_ds(4,:),'r');
-%hold on;
-%plot(Time_rs,I_sun_sens_ds(5,:),'g');
-%plot(Time_rs,I_sun_sens_ds(6,:),'c');
-%ylabel('V');
-%xlabel('Time (s)');
-%hold off;
-%title('-x');
-%subplot(2,3,2);
-%plot(Time_rs,I_sun_sens_ds(7,:),'r');
-%hold on;
-%plot(Time_rs,I_sun_sens_ds(8,:),'g');
-%plot(Time_rs,I_sun_sens_ds(9,:),'c');
-%hold off;
-%ylabel('V');
-%xlabel('Time (s)');
-%title('+y');
-%subplot(2,3,5);
-%plot(Time_rs,I_sun_sens_ds(10,:),'r');
-%hold on;
-%plot(Time_rs,I_sun_sens_ds(11,:),'g');
-%plot(Time_rs,I_sun_sens_ds(12,:),'c');
-%ylabel('V');
-%xlabel('Time (s)');
-%hold off;
-%title('-y');
-%subplot(2,3,3);
-%plot(Time_rs,I_sun_sens_ds(13,:),'r');
-%ylabel('V');
-%xlabel('Time (s)');
-%hold off;
-%title('+z');
-%subplot(2,3,6);
-%plot(Time_rs,I_sun_sens_ds(14,:),'r');
-%ylabel('V');
-%xlabel('Time (s)');
-%hold off;
-%title('-z');
-
-
-
-%Plot Orbit
-% figure;
-% title('X\_hat');
-% hold on;
-% plot3(Sat_ECI_xhat(1,:),Sat_ECI_xhat(2,:),Sat_ECI_xhat(3,:),'r');
-% plot3([0 Sat_ECI_yhat(1,1)],[0 Sat_ECI_yhat(2,1)],[0 Sat_ECI_yhat(3,1)],'g');
-% plot3(Sat_ECI_zhat(1,:),Sat_ECI_zhat(2,:),Sat_ECI_zhat(3,:),'b');
-% plot3([0 1],[0 0],[0 0],'r',[0 0],[0 1],[0 0],'g',[0 0],[0 0],[0 1],'b','linewidth',2);
-% plot3(B_norm(1,:),B_norm(2,:),B_norm(3,:),'c');
-% plot3([0 Orbit.Sun_ECI(1,1)],[0 Orbit.Sun_ECI(2,1)],[0 Orbit.Sun_ECI(3,1)],'k');
-% xlabel('X');ylabel('Y');zlabel('Z');
-% set(gca,'DataAspectRatio',[1 1 1]);
-% view([1,1,1]);
-% hold off;
-
-
-%%
-% figure;
-% title('T0');
-% hold on;
-% plot3([0 1],[0 0],[0 0],'r',[0 0],[0 1],[0 0],'g',[0 0],[0 0],[0 1],'b','linewidth',2);
-% plot3([0 Sat_ECI_xhat(1,1)],[0 Sat_ECI_xhat(2,1)],[0 Sat_ECI_xhat(3,1)],'r');
-% plot3([0 Sat_ECI_yhat(1,1)],[0 Sat_ECI_yhat(2,1)],[0 Sat_ECI_yhat(3,1)],'g');
-% plot3([0 Sat_ECI_zhat(1,1)],[0 Sat_ECI_zhat(2,1)],[0 Sat_ECI_zhat(3,1)],'r');
-% plot3([0 B_norm(1,1)],[0 B_norm(2,1)],[0 B_norm(3,1)],'c');
-% plot3([0 Orbit.Sun_ECI(1,1)],[0 Orbit.Sun_ECI(2,1)],[0 Orbit.Sun_ECI(3,1)],'k');
-% xlabel('X');ylabel('Y');zlabel('Z');
-% set(gca,'DataAspectRatio',[1 1 1]);
-% view([1,1,1]);
-% hold off;
-
-
-
-%% Animation
-% fig_anim = figure('Position',[100,100,900,900]);
-% for k = 1:length(Sat_ECI_xhat(1,:))
-%     plot3(Sat_ECI_xhat(1,k),Sat_ECI_xhat(2,k),Sat_ECI_xhat(3,k),'r','marker','o'); 
-%     hold on;
-%     plot3([Sat_ECI_xhat(1,k), -Sat_ECI_zhat(1,k)+Sat_ECI_xhat(1,k)],[Sat_ECI_xhat(2,k), -Sat_ECI_zhat(2,k)+Sat_ECI_xhat(2,k)],[Sat_ECI_xhat(3,k), -Sat_ECI_zhat(3,k)+Sat_ECI_xhat(3,k)],'b','linewidth',2);
-%     plot3([0 1/2],[0 0],[0 0],'r',[0 0],[0 1/2],[0 0],'g',[0 0],[0 0],[0 1/2],'b','linewidth',2);
-%     plot3([Sat_ECI_xhat(1,k), -B_norm(1,k)+Sat_ECI_xhat(1,k)],[Sat_ECI_xhat(2,k), -B_norm(2,k)+Sat_ECI_xhat(2,k)],[Sat_ECI_xhat(3,k), -B_norm(3,k)+Sat_ECI_xhat(3,k)],'c','linewidth',2);
-%     plot3([Sat_ECI_xhat(1,k), -Orbit.Sun_ECI(1,k)+Sat_ECI_xhat(1,k)],[Sat_ECI_xhat(2,k), -Orbit.Sun_ECI(2,k)+Sat_ECI_xhat(2,k)],[Sat_ECI_xhat(3,k) -Orbit.Sun_ECI(3,k)+Sat_ECI_xhat(3,k)],'y','linewidth',2);
-%     xlabel('X');ylabel('Y');zlabel('Z');
-%     axis([-1,1,-1,1,-1,1]);
-%     view([1,0,0]);
-%     hold off;
-%     M(k) = getframe; 
-% end
-
-%figure; subplot(2,1,1); plot(Orbit.Time,I_sun_sens);subplot(2,1,2);plot(Time_rs,I_sun_sens_ds)

@@ -8,7 +8,7 @@ function [ I, alpha ] = sun_sens( s_hat, a_v, n_hat_3d)
     K = length(n_hat_3d(:,1,1));
     %L = length(a_v(1,:));
     rng('default'); %Reset randn
-    n_std_dev = .02; %.005; %.015/3 SolarMEMs A60 Estimate (.02 Osram)  V Noise std-dev
+    n_std_dev = 0; %.02; %.005; %.015/3 SolarMEMs A60 Estimate (.02 Osram)  V Noise std-dev
     half_angle = 70; % Deg (FOV) (70 Osram)
     
     for k = 1:K

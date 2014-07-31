@@ -3,7 +3,7 @@ function [ b_sens_v ] = mag_sens_3axis( b_v, x_h, z_h)
 %b_v - magnetic field vector, x_h vector in X-Axis of sensor.
     %n_std_dev = 125e-9; %Noise floor (ADIS16404)
     %n_std_dev = 410e-9; %STM
-    n_std_dev = 5e-6; %STM
+    n_std_dev = .44e-6; %STM
 
     y_h = cross(z_h,x_h);
 
@@ -21,11 +21,5 @@ function [ b_sens_v ] = mag_sens_3axis( b_v, x_h, z_h)
     b_sens_v(2,:) = scale(2,1)*(By_v.*cosd(nonorth(1,1))+Bx_v.*sind(nonorth(1,1))) + offset(2,1) + n_std_dev*randn(1,length(b_v(1,:)));
     b_sens_v(3,:) = scale(3,1)*(Bx_v.*sind(nonorth(2,1))+By_v.*sind(nonorth(3,1)).*cosd(nonorth(2,1))+Bz_v*cosd(nonorth(3,1)).*cosd(nonorth(2,1))) + offset(3,1) + n_std_dev*randn(1,length(b_v(1,:)));
 
-%    b_sens_c = num2cell(b_sens_v,1);
-%    parfor i = 1:length(b_v(1,:))
-%	b_sens_c{i}(2) = scale(2,1)*(By_v(:,i)*cosd(nonorth(1,1)+Bx_v(:,i)*sind(nonorth(1,1)))) + offset(2,1) + n_std_dev*randn();
-%	b_sens_c{i}(3) = scale(3,1)*(Bx_v(:,i)*sind(nonorth(2,1))+By_v(:,i)*sind(nonorth(3,1))*cosd(nonorth(2,1))+Bz_v(:,i)*cosd(nonorth(3,1))*cosd(nonorth(2,1))) + offset(3,1) + n_std_dev*randn();
-%    end
-    %b_sens_v = [b_sens_c{:}];
 end
 

@@ -6,7 +6,7 @@
 
 %%
 clear all;
-close all;
+%close all;
 warning('off','Control:analysis:LsimStartTime');
 
 %% Load Orbit and attitude toolbox
@@ -153,14 +153,12 @@ for k=1:sens_length
     if S_sens_num_bf(:,k) > 2 %Check that Sun Vector estimate is accurate
     	eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k)];
     	z_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
-	R_k = eye(6,6);%Meas Noise Cov
     else
 	eci_k = [B_ECI_ds(:,k)];
     	z_k = [B_sens_est(:,k)];
-	R_k = eye(3,3); %Meas Noise Cov
     end
-    if k>1
-        [R_eci_body_est(:,:,k) P_k]= est_mekf_b(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, R_k, timestep);
+    if 0%k>1
+        [R_eci_body_est(:,:,k) P_k]= est_mekf_b(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, timestep);
     else	
 	R_eci_body_est(:,:,k) = est_svd(z_k,eci_k);
     end

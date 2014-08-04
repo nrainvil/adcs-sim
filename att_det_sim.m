@@ -150,15 +150,15 @@ z_k = 0;
 P_k = eye(4,4);
 for k=1:sens_length    
     %MEKF
-    if S_sens_num_bf(:,k) > 2 %Check that Sun Vector estimate is accurate
-    	eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k)];
-    	z_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
-    else
+    %if S_sens_num_bf(:,k) > 2 %Check that Sun Vector estimate is accurate
+    	%eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k)];
+    	%z_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
+    %else
 	eci_k = [B_ECI_ds(:,k)];
     	z_k = [B_sens_est(:,k)];
-    end
-    if 0%k>1
-        [R_eci_body_est(:,:,k) P_k]= est_mekf_b(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, timestep);
+    %end
+    if k>1
+        [R_eci_body_est(:,:,k) P_k]= est_ekf(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, timestep);
     else	
 	R_eci_body_est(:,:,k) = est_svd(z_k,eci_k);
     end

@@ -130,7 +130,7 @@ sens_length = length(Time_rs);
 fprintf(1,'Attitude Estimate:    \n');
 %Estimate sun vector
 I_sun_sens_ds = reshape(I_sun_sens_rs.data,length(I_sun_sens(:,1)),sens_length);
-[S_sens_est_bf, S_sens_num_bf] = est_sun_sens(I_sun_sens_ds, norm_sun_sens);
+%[S_sens_est_bf, S_sens_num_bf] = est_sun_sens(I_sun_sens_ds, norm_sun_sens);
 
 %Estimate magnetic field vector
 B_mag_sens_ds = reshape(B_mag_sens_rs.data,length(B_mag_sens(:,1)),sens_length);
@@ -149,18 +149,13 @@ drift_bias = [0;0;0];
 z_k = 0;
 P_k = eye(4,4);
 for k=1:sens_length    
-    %MEKF
-    %if S_sens_num_bf(:,k) > 2 %Check that Sun Vector estimate is accurate
-    	%eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k)];
-    	%z_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
-    %else
-	eci_k = [B_ECI_ds(:,k)];
-    	z_k = [B_sens_est(:,k)];
-    %end
+    %EKF
+    b_eci_k = B_ECI_ds(:,k);
+    s_eci_k = Sun_ECI_ds(:,k);
     if k>1
-        [R_eci_body_est(:,:,k) P_k]= est_ekf(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), z_k, eci_k, timestep);
+        [R_eci_body_est(:,:,k) P_k]= est_ekf(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), B_sens_est(:,k), I_sun_sens_ds(:,k), norm_sun_sens, b_eci_k, s_eci_k, timestep);
     else	
-	R_eci_body_est(:,:,k) = est_svd(z_k,eci_k);
+	R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
     end
 
     %SVD Least Squares
@@ -248,11 +243,11 @@ end
 B_true_norm = sqrt(sum((B_true_bf).^2));
 S_true_norm = sqrt(sum((S_true_bf).^2));
 B_sens_norm = sqrt(sum((B_sens_est).^2));
-S_sens_norm = sqrt(sum((S_sens_est_bf).^2));
+%S_sens_norm = sqrt(sum((S_sens_est_bf).^2));
 B_err = sqrt(sum((B_true_bf-B_sens_est).^2));
 S_err = sqrt(sum((S_true_bf-S_sens_est_bf).^2));
 B_angle_err = acosd(dot(B_true_bf,B_sens_est)./(B_true_norm.*B_sens_norm));
-S_angle_err = acosd(dot(S_true_bf,S_sens_est_bf)./(S_true_norm.*S_sens_norm));
+%S_angle_err = acosd(dot(S_true_bf,S_sens_est_bf)./(S_true_norm.*S_sens_norm));
 
 %Plot Error
 figure;
@@ -337,12 +332,12 @@ plot(Time_rs,S_sens_est_bf(3,:),'b');
 title('Sun Vector Estimate');
 legend('BF\_X','BF\_Y','BF\_Z');
 hold off;
-subplot(4,1,3);
-plot(Time_rs, S_sens_num_bf);
-title('Number of active Sun sensors');
-subplot(4,1,4);
-plot(Time_rs, S_angle_err);
-title('Sun Vector Error');
+%subplot(4,1,3);
+%plot(Time_rs, S_sens_num_bf);
+%title('Number of active Sun sensors');
+%subplot(4,1,4);
+%plot(Time_rs, S_angle_err);
+%title('Sun Vector Error');
 
 %Body Frame
 figure;

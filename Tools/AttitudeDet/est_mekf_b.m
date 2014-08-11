@@ -39,6 +39,7 @@ function [ DCM_k_p, P_k_p ] = est_mekf_b( DCM_k_m, drift_bias, P_km_p, w_in, z_k
                x_k_m(3,:)*ref_v(4,:)+x_k_m(4,:)*ref_v(5,:)-x_k_m(1,:)*ref_v(6,:),-x_k_m(4,:)*ref_v(4,:)+x_k_m(3,:)*ref_v(5,:)-x_k_m(2,:)*ref_v(6,:),x_k_m(1,:)*ref_v(4,:)+x_k_m(2,:)*ref_v(5,:)+x_k_m(3,:)*ref_v(6,:),-x_k_m(2,:)*ref_v(4,:)+x_k_m(1,:)*ref_v(5,:)+x_k_m(4,:)*ref_v(6,:);];
 
 	K_k = P_k_m*H'*inv(H*P_k_m*H'+R); 
+	K_k = 0;
 
 	%Update
 	h_quad = [(x_k_m(1,:)^2-x_k_m(2,:)^2-x_k_m(3,:)^2+x_k_m(4,:)^2),(2*x_k_m(1,:)*x_k_m(2,:)-2*x_k_m(3,:)*x_k_m(4,:)),(2*x_k_m(2,:)*x_k_m(4,:)+2*x_k_m(1,:)*x_k_m(3,:)); ...

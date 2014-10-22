@@ -143,34 +143,33 @@ G_rate_est = G_rate_sens_ds;
 % Generate Cosine Matrix
 B_ECI_ds = reshape(B_ECI_rs.data,length(Orbit.B_ECI(:,1)),sens_length);
 Sun_ECI_ds = reshape(Sun_ECI_rs.data,length(Orbit.Sun_ECI(:,1)),sens_length);
-%R_test(:,:,1) = R_eci_body(:,:,1); %START FROM KNOWN STATE (REMOVE)
+R_test(:,:,1) = R_eci_body(:,:,1); %START FROM KNOWN STATE (REMOVE)
 timestep = 1/fs_sens;
 drift_bias = [0;0;0];
 z_k = 0;
 P_k = eye(4,4);
 for k=1:sens_length    
     %EKF
-    b_eci_k = B_ECI_ds(:,k);
-    s_eci_k = Sun_ECI_ds(:,k);
-    if k>1
-        [R_eci_body_est(:,:,k) P_k]= est_ekf(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), B_sens_est(:,k), I_sun_sens_ds(:,k), norm_sun_sens, b_eci_k, s_eci_k, timestep);
-    else	
-	R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
-    end
+%    b_eci_k = B_ECI_ds(:,k);
+%    s_eci_k = Sun_ECI_ds(:,k);
+%    if k>1
+%        [R_eci_body_est(:,:,k) P_k]= est_ekf(R_eci_body_est(:,:,k-1), drift_bias, P_k, G_rate_est(:,k), B_sens_est(:,k), I_sun_sens_ds(:,k), norm_sun_sens, b_eci_k, s_eci_k, timestep);
+%    else	
+%	R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
+%    end
 
     %SVD Least Squares
-    %if k>1
-    %	w_ss = cart2ss(G_rate_est(:,k));
-    %    diff_x_est = w_ss*R_test(:,:,k-1);
-    %    R_test(:,:,k) = R_eci_body_est(:,:,k-1) + diff_x_est*timestep;
-    %end
-    %b_k = [B_sens_est(:,k),S_sens_est_bf(:,k),[1;0;0],[0;0;1]];
-    %b_k = [[1;0;0],[0;0;1]];
-    %eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k),R_test(:,1,k),R_test(:,3,k)];
-    %eci_k = [R_test(:,1,k),R_test(:,3,k)];
-    %if k==1
-    %	R_eci_body_est(:,:,k) = est_svd(b_k, eci_k);
-    %end
+    %Assumes start in sun
+    if k>1
+    	w_ss = cart2ss(G_rate_est(:,k));
+        diff_x_est = w_ss*R_test(:,:,k-1);
+        R_test(:,:,k) = R_eci_body_est(:,:,k-1) + diff_x_est*timestep;
+    end
+
+    b_eci_k = B_ECI_ds(:,k);
+    s_eci_k = Sun_ECI_ds(:,k);
+    %R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
+    R_eci_body_est(:,:,k) = est_quest([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
 
     fprintf(1,'\b\b\b%02d%%',floor((k/sens_length)*100));
 end
@@ -244,27 +243,27 @@ B_true_norm = sqrt(sum((B_true_bf).^2));
 S_true_norm = sqrt(sum((S_true_bf).^2));
 B_sens_norm = sqrt(sum((B_sens_est).^2));
 %S_sens_norm = sqrt(sum((S_sens_est_bf).^2));
-B_err = sqrt(sum((B_true_bf-B_sens_est).^2));
+%B_err = sqrt(sum((B_true_bf-B_sens_est).^2));
 S_err = sqrt(sum((S_true_bf-S_sens_est_bf).^2));
 B_angle_err = acosd(dot(B_true_bf,B_sens_est)./(B_true_norm.*B_sens_norm));
 %S_angle_err = acosd(dot(S_true_bf,S_sens_est_bf)./(S_true_norm.*S_sens_norm));
 
 %Plot Error
-figure;
-subplot(2,1,1);
-plot(Orbit_Time_dec,ram_err_dec);
-title('Ram Pointing Error');
-hold on;
-plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
-ylabel('Error (degrees)');
-xlabel('Time (s)');
-subplot(2,1,2);
-plot(Orbit_Time_dec,sun_err_dec);
-title('Sun Pointing Error');
-hold on;
-plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
-ylabel('Error (degrees)');
-xlabel('Time (s)');
+%figure;
+%subplot(2,1,1);
+%plot(Orbit_Time_dec,ram_err_dec);
+%title('Ram Pointing Error');
+%hold on;
+%plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
+%ylabel('Error (degrees)');
+%xlabel('Time (s)');
+%subplot(2,1,2);
+%plot(Orbit_Time_dec,sun_err_dec);
+%title('Sun Pointing Error');
+%hold on;
+%plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
+%ylabel('Error (degrees)');
+%xlabel('Time (s)');
 
 
 %%Plot Body Rates

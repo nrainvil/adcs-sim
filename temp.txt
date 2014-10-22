@@ -1,0 +1,31 @@
+
+	H =  [q(1)*S(1)+q(2)*S(2)+q(3)*S(3),-q(2)*S(1)+q(1)*S(2)+q(4)*S(3), -q(3)*S(1)-q(4)*S(2)+q(1)*S(3),q(4)*S(1)-q(3)*S(2)+q(2)*S(3);...
+               q(2)*S(1)-q(1)*S(2)-q(4)*S(3),q(1)*S(1)+q(2)*S(2)+q(3)*S(3),q(4)*S(1)-q(3)*S(2)+q(2)*S(3),q(3)*S(1)+q(4)*S(2)-q(1)*S(3); ...
+               q(3)*S(1)+q(4)*S(2)-q(1)*S(3),-q(4)*S(1)+q(3)*S(2)-q(2)*S(3),q(1)*S(1)+q(2)*S(2)+q(3)*S(3),-q(2)*S(1)+q(1)*S(2)+q(4)*S(3);]
+
+rotA = [(q(1)^2-q(2)^2-q(3)^2+q(4)^2),(2*q(1)*q(2)-2*q(3)*q(4)),(2*q(2)*q(4)+2*q(1)*q(3)); ...
+(2*q(1)*q(2)+2*q(3)*q(4)),(-q(1)^2+q(2)^2-q(3)^2+q(4)^2),(-2*q(1)*q(4)+2*q(2)*q(3)); ...
+(2*q(1)*q(3)-2*q(2)*q(4)),(2*q(1)*q(4)+2*q(2)*q(3)),(-q(1)^2-q(2)^2+q(3)^2+q(4)^2);];
+
+
+k = 2;
+   if S_sens_num_bf(:,k) > 2 %Check that Sun Vector estimate is accurate
+    	eci_k = [B_ECI_ds(:,k),Sun_ECI_ds(:,k)];
+    	z_k = [B_sens_est(:,k),S_sens_est_bf(:,k)];
+	R_k = eye(6,6);%Meas Noise Cov
+    else
+	eci_k = [B_ECI_ds(:,k)];
+    	z_k = [B_sens_est(:,k)];
+	R_k = eye(3,3); %Meas Noise Cov
+    end
+
+k=2;
+P_k = eye(4,4);
+dt = timestep;
+b_ref_v_in = b_eci_k;
+s_ref_v_in = s_eci_k;
+sun_sens = I_sun_sens_ds(:,k);
+b_k_in = B_sens_est(:,k);
+w_in = G_rate_est(:,k);
+P_km_p= P_k;
+DCM_k_m = R_eci_body_est(:,:,k-1);

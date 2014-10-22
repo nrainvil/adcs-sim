@@ -30,7 +30,7 @@ function [ DCM_k_p, P_k_p ] = est_ekf( DCM_k_m, drift_bias, P_km_p, w_in, b_k_in
 	F = (1/2)*Omega;
 	G = F; %?
 	dx = F*x_km_p;
-	dP = F*P_km_p+P_km_p*F' + G*Q+G'; 
+	dP = F*P_km_p+P_km_p*F' + G*Q*G'; 
 	x_k_m = dx*dt + x_km_p;
 	P_k_m = dP*dt + P_km_p;
 
@@ -60,7 +60,7 @@ function [ DCM_k_p, P_k_p ] = est_ekf( DCM_k_m, drift_bias, P_km_p, w_in, b_k_in
                x_k_m(2,:)*b_ref_v(1,:)-x_k_m(1,:)*b_ref_v(2,:)-x_k_m(4,:)*b_ref_v(3,:),x_k_m(1,:)*b_ref_v(1,:)+x_k_m(2,:)*b_ref_v(2,:)+x_k_m(3,:)*b_ref_v(3,:),x_k_m(4,:)*b_ref_v(1,:)-x_k_m(3,:)*b_ref_v(2,:)+x_k_m(2,:)*b_ref_v(3,:),x_k_m(3,:)*b_ref_v(1,:)+x_k_m(4,:)*b_ref_v(2,:)-x_k_m(1,:)*b_ref_v(3,:); ...
                x_k_m(3,:)*b_ref_v(1,:)+x_k_m(4,:)*b_ref_v(2,:)-x_k_m(1,:)*b_ref_v(3,:),-x_k_m(4,:)*b_ref_v(1,:)+x_k_m(3,:)*b_ref_v(2,:)-x_k_m(2,:)*b_ref_v(3,:),x_k_m(1,:)*b_ref_v(1,:)+x_k_m(2,:)*b_ref_v(2,:)+x_k_m(3,:)*b_ref_v(3,:),-x_k_m(2,:)*b_ref_v(1,:)+x_k_m(1,:)*b_ref_v(2,:)+x_k_m(4,:)*b_ref_v(3,:)];
 
-	K_b_k = P_k_m*H_b'*inv(H_b*P_k_m*H_b'+R_b); 
+	K_b_k = (P_k_m*H_b'*inv(H_b*P_k_m*H_b'+R_b)); 
 
 	%Update - B
 	h_quad = [(x_k_m(1,:)^2-x_k_m(2,:)^2-x_k_m(3,:)^2+x_k_m(4,:)^2),(2*x_k_m(1,:)*x_k_m(2,:)-2*x_k_m(3,:)*x_k_m(4,:)),(2*x_k_m(2,:)*x_k_m(4,:)+2*x_k_m(1,:)*x_k_m(3,:)); ...
@@ -75,7 +75,7 @@ function [ DCM_k_p, P_k_p ] = est_ekf( DCM_k_m, drift_bias, P_km_p, w_in, b_k_in
                x_b_k_p(2,:)*s_ref_v(1,:)-x_b_k_p(1,:)*s_ref_v(2,:)-x_b_k_p(4,:)*s_ref_v(3,:),x_b_k_p(1,:)*s_ref_v(1,:)+x_b_k_p(2,:)*s_ref_v(2,:)+x_b_k_p(3,:)*s_ref_v(3,:),x_b_k_p(4,:)*s_ref_v(1,:)-x_b_k_p(3,:)*s_ref_v(2,:)+x_b_k_p(2,:)*s_ref_v(3,:),x_b_k_p(3,:)*s_ref_v(1,:)+x_b_k_p(4,:)*s_ref_v(2,:)-x_b_k_p(1,:)*s_ref_v(3,:); ...
                x_b_k_p(3,:)*s_ref_v(1,:)+x_b_k_p(4,:)*s_ref_v(2,:)-x_b_k_p(1,:)*s_ref_v(3,:),-x_b_k_p(4,:)*s_ref_v(1,:)+x_b_k_p(3,:)*s_ref_v(2,:)-x_b_k_p(2,:)*s_ref_v(3,:),x_b_k_p(1,:)*s_ref_v(1,:)+x_b_k_p(2,:)*s_ref_v(2,:)+x_b_k_p(3,:)*s_ref_v(3,:),-x_b_k_p(2,:)*s_ref_v(1,:)+x_b_k_p(1,:)*s_ref_v(2,:)+x_b_k_p(4,:)*s_ref_v(3,:)];
 
-	K_s_k = P_b_k_p*H_s'*inv(H_s*P_b_k_p*H_s'+R_s); 
+	K_s_k = (P_b_k_p*H_s'*inv(H_s*P_b_k_p*H_s'+R_s)); 
 
 	%Update - S
 	h_quad = [(x_b_k_p(1,:)^2-x_b_k_p(2,:)^2-x_b_k_p(3,:)^2+x_b_k_p(4,:)^2),(2*x_b_k_p(1,:)*x_b_k_p(2,:)-2*x_b_k_p(3,:)*x_b_k_p(4,:)),(2*x_b_k_p(2,:)*x_b_k_p(4,:)+2*x_b_k_p(1,:)*x_b_k_p(3,:)); ...

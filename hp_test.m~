@@ -1,6 +1,0 @@
-clear all;
-close all;
-
-
-t = 0:100;
-real_gyro_data = sin(2*pi/t);

@@ -45,7 +45,7 @@ julienDate = Jday(2015,5,1,0);
 j2000_offset = 2451545;
 j2000Date = julienDate -j2000_offset;
 startTime = datenum('01 May 2015 00:00:00');
-stopTime  = datenum('01 May 2015 00:12:00');
+stopTime  = datenum('01 May 2015 01:00:00');
 %stopTime  = datenum('01 May 2015 01:32:00');
 timeStep = .5;%.2; % [sec] (5 Hz)
 time = startTime:timeStep/(3600*24):stopTime;
@@ -168,8 +168,20 @@ for k=1:sens_length
 
     b_eci_k = B_ECI_ds(:,k);
     s_eci_k = Sun_ECI_ds(:,k);
-    %R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
-    R_eci_body_est(:,:,k) = est_quest([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
+    ss_cnt = 0;
+    for ss = 1:length(I_sun_sens_ds(:,1))
+        if (I_sun_sens_ds(ss,k))
+            ss_cnt = ss_cnt + 1;
+        end
+    end
+    if (ss_cnt >= 3)
+        R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
+        %R_eci_body_est(:,:,k) = est_quest([B_sens_est(:,k),est_sun_sens(I_sun_sens_ds(:,k), norm_sun_sens)],[b_eci_k,s_eci_k]);
+    else
+        x_w_int = R_test(:,:,k)'*[1;0;0];
+        R_eci_body_est(:,:,k) = est_svd([B_sens_est(:,k),x_w_int],[b_eci_k,[1;0;0]]);
+        %R_eci_body_est(:,:,k) = est_quest([B_sens_est(:,k),x_w_int],[b_eci_k,[1;0;0]]);
+    end
 
     fprintf(1,'\b\b\b%02d%%',floor((k/sens_length)*100));
 end
@@ -244,26 +256,26 @@ S_true_norm = sqrt(sum((S_true_bf).^2));
 B_sens_norm = sqrt(sum((B_sens_est).^2));
 %S_sens_norm = sqrt(sum((S_sens_est_bf).^2));
 %B_err = sqrt(sum((B_true_bf-B_sens_est).^2));
-S_err = sqrt(sum((S_true_bf-S_sens_est_bf).^2));
-B_angle_err = acosd(dot(B_true_bf,B_sens_est)./(B_true_norm.*B_sens_norm));
+%S_err = sqrt(sum((S_true_bf-S_sens_est_bf).^2));
+B_angle_err = acosd(dot(B_true_bf(:,1:length(B_sens_est(1,:))),B_sens_est)./(B_true_norm(:,1:length(B_sens_est(1,:))).*B_sens_norm));
 %S_angle_err = acosd(dot(S_true_bf,S_sens_est_bf)./(S_true_norm.*S_sens_norm));
 
 %Plot Error
-%figure;
-%subplot(2,1,1);
-%plot(Orbit_Time_dec,ram_err_dec);
-%title('Ram Pointing Error');
-%hold on;
-%plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
-%ylabel('Error (degrees)');
-%xlabel('Time (s)');
-%subplot(2,1,2);
-%plot(Orbit_Time_dec,sun_err_dec);
-%title('Sun Pointing Error');
-%hold on;
-%plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
-%ylabel('Error (degrees)');
-%xlabel('Time (s)');
+figure;
+subplot(2,1,1);
+plot(Orbit_Time_dec,ram_err_dec);
+title('Ram Pointing Error');
+hold on;
+plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
+ylabel('Error (degrees)');
+xlabel('Time (s)');
+subplot(2,1,2);
+plot(Orbit_Time_dec,sun_err_dec);
+title('Sun Pointing Error');
+hold on;
+plot(Orbit_Time_dec,2*ones(length(Orbit_Time_dec)),'r');
+ylabel('Error (degrees)');
+xlabel('Time (s)');
 
 
 %%Plot Body Rates
@@ -325,9 +337,9 @@ legend('ECI\_X','ECI\_Y','ECI\_Z');
 hold off;
 subplot(4,1,2);
 hold on;
-plot(Time_rs,S_sens_est_bf(1,:),'r');
-plot(Time_rs,S_sens_est_bf(2,:),'g');
-plot(Time_rs,S_sens_est_bf(3,:),'b');
+%plot(Time_rs,S_sens_est_bf(1,:),'r');
+%plot(Time_rs,S_sens_est_bf(2,:),'g');
+%plot(Time_rs,S_sens_est_bf(3,:),'b');
 title('Sun Vector Estimate');
 legend('BF\_X','BF\_Y','BF\_Z');
 hold off;

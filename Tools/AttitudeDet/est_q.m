@@ -6,8 +6,11 @@ function [ R ] = est_q( b_k, eci_k)
 
 B = zeros(3,3);
 for k=1:length(b_k(1,:))
-    B = B + (1/length(b_k(1,:)))*b_k(:,k)*eci_k(:,k)';
+    w_v = b_k(:,k)/norm(b_k(:,k));
+    v_v = eci_k(:,k)/norm(eci_k(:,k));
+    B = B + (1/length(w_v(1,:)))*w_v*v_v';
 end
+
 S = B + B';
 Z = [B(2,3)-B(3,2); ...
      B(3,1)-B(1,3); ...
